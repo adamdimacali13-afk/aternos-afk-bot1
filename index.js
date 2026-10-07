@@ -1,35 +1,41 @@
 const mineflayer = require('mineflayer');
 
 function createBot() {
+    console.log("Attempting to connect to the Minecraft server...");
+    
     const bot = mineflayer.createBot({
-        host: process.env.IP || 'GERMANJV.aternos.me',
-        port: parseInt(process.env.PORT) || 21584,
-        username: process.env.USERNAME || 'BotAdam99'
+        host: 'GERMANJV.aternos.me',
+        port: 21584,
+        username: 'BotAdam99',
+        checkTimeoutInterval: 60 * 1000 // Prevents false-positive lag kicks
     });
 
-    bot.on('spawn', () => {
-        console.log(`${bot.username} successfully joined the server!`);
+    bot.once('spawn', () => {
+        console.log(`${bot.username} has successfully spawned in the world!`);
+        
+        // Wait 3 seconds for the server plugins to finish loading, then log in
         setTimeout(() => {
-            bot.chat(`/login ${process.env.PASSWORD || 'BotPassword123'}`);
-        }, 2000);
-    });
+            console.log("Sending login command to chat...");
+            bot.chat('/login BotPassword123');
+        }, 3000);
 
-    bot.on('chat', (username, message) => {
-        if (username === bot.username) return;
-        console.log(`[Chat] ${username}: ${message}`);
+        // Put the bot safely into Spectator mode right after log in
+        setTimeout(() => {
+            bot.chat('/gamemode spectator');
+        }, 5000);
     });
 
     bot.on('kicked', (reason) => {
-        console.log(`Bot was kicked: ${reason}`);
+        console.log(`Bot was kicked from the server. Reason: ${reason}`);
     });
 
     bot.on('error', (err) => {
-        console.log(`Bot encountered an error: ${err}`);
+        console.error(`Network error encountered: ${err.message}`);
     });
 
     bot.on('end', () => {
-        console.log('Connection lost. Reconnecting in 10 seconds...');
-        setTimeout(createBot, 10000);
+        console.log('Connection closed. Retrying connection loop in 15 seconds...');
+        setTimeout(createBot, 15000); // 15-second cooldown to stop spamming kicks
     });
 }
 
